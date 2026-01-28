@@ -1,0 +1,3 @@
+"""
+Trips app configuration.
+"""
