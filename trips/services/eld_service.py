@@ -1,20 +1,4 @@
-"""
-ELD (Electronic Logging Device) Log Generator Service.
 
-Generates ELD-compliant daily log sheets based on trip and HOS calculations.
-Outputs structured JSON for frontend rendering of the grid-based log display.
-
-ELD Log Format:
-==============
-Each day's log contains a 24-hour timeline divided into 15-minute increments.
-Status blocks show:
-- Start time
-- End time  
-- Duty status (Off Duty, Sleeper Berth, Driving, On Duty Not Driving)
-
-The output is structured for rendering a visual ELD log grid similar to
-paper logs used before electronic logging became mandatory.
-"""
 
 import logging
 from datetime import datetime, time, timedelta
@@ -53,7 +37,8 @@ class ELDDailyLog:
     """
     Complete ELD log for a single day.
     
-    Contains all entries and summary information needed for rendering.
+    Contains all entries and summary information needed for rendering
+    the official DOT Driver's Daily Log format.
     """
     date: str           # YYYY-MM-DD format
     day_number: int
@@ -70,12 +55,25 @@ class ELDDailyLog:
     starting_location: str
     ending_location: str
     
-    # Carrier info (can be customized)
+    # Carrier info (required DOT fields)
     carrier_name: str
+    carrier_address: str
     driver_name: str
+    
+    # Vehicle info (required DOT fields)
+    vehicle_numbers: str  # Truck/tractor and trailer numbers
+    
+    # Shipping info
+    shipping_doc_number: str
+    
+    # Co-driver (if team driving)
+    co_driver_name: str
     
     # Grid rendering data
     grid_data: List[Dict]  # Pre-processed for easy frontend rendering
+    
+    # Remarks collected from all entries
+    remarks_list: List[str]
     
     def to_dict(self) -> Dict:
         return {
@@ -88,8 +86,32 @@ class ELDDailyLog:
             'starting_location': self.starting_location,
             'ending_location': self.ending_location,
             'carrier_name': self.carrier_name,
+            'carrier_address': self.carrier_address,
             'driver_name': self.driver_name,
-            'grid_data': self.grid_data
+            'vehicle_numbers': self.vehicle_numbers,
+            'shipping_doc_number': self.shipping_doc_number,
+            'co_driver_name': self.co_driver_name,
+            'grid_data': self.grid_data,
+            'remarks': self.remarks_list,
+            # For drawing the official DOT log sheet
+            'form_fields': {
+                'date_formatted': self.date,
+                'total_miles_driving_today': self.total_miles,
+                'vehicle_numbers': self.vehicle_numbers,
+                'carrier_name': self.carrier_name,
+                'main_office_address': self.carrier_address,
+                'driver_signature': self.driver_name,
+                'co_driver_name': self.co_driver_name,
+                'shipping_documents': self.shipping_doc_number,
+                '24_hour_start_time': 'Midnight',
+                'hours_summary': {
+                    'off_duty': self.total_hours.get('off_duty', 0),
+                    'sleeper_berth': self.total_hours.get('sleeper_berth', 0),
+                    'driving': self.total_hours.get('driving', 0),
+                    'on_duty_not_driving': self.total_hours.get('on_duty_not_driving', 0),
+                    'total': self.total_hours.get('total', 24),
+                }
+            }
         }
 
 
@@ -123,10 +145,18 @@ class ELDLogService:
     def __init__(
         self,
         carrier_name: str = "ELD Trip Planner Demo",
-        driver_name: str = "Demo Driver"
+        carrier_address: str = "Demo Address, USA",
+        driver_name: str = "Demo Driver",
+        vehicle_numbers: str = "",
+        co_driver_name: str = "",
+        shipping_doc_number: str = ""
     ):
         self.carrier_name = carrier_name
+        self.carrier_address = carrier_address
         self.driver_name = driver_name
+        self.vehicle_numbers = vehicle_numbers
+        self.co_driver_name = co_driver_name
+        self.shipping_doc_number = shipping_doc_number
     
     def generate_logs(
         self,
@@ -187,6 +217,9 @@ class ELDLogService:
             summary.duty_periods, 'last', locations
         )
         
+        # Collect remarks from entries
+        remarks_list = [e.remarks for e in entries if e.remarks]
+        
         return ELDDailyLog(
             date=summary.date.strftime('%Y-%m-%d'),
             day_number=summary.day_number,
@@ -197,8 +230,13 @@ class ELDLogService:
             starting_location=starting_location,
             ending_location=ending_location,
             carrier_name=self.carrier_name,
+            carrier_address=self.carrier_address,
             driver_name=self.driver_name,
-            grid_data=grid_data
+            vehicle_numbers=self.vehicle_numbers,
+            shipping_doc_number=self.shipping_doc_number,
+            co_driver_name=self.co_driver_name,
+            grid_data=grid_data,
+            remarks_list=remarks_list
         )
     
     def _create_log_entry(self, period: DutyPeriod) -> ELDLogEntry:

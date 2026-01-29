@@ -18,3 +18,10 @@ gunicorn>=21.2.0
 
 # Environment variable management
 python-dotenv>=1.0.0
+
+# Production database (PostgreSQL)
+psycopg2-binary>=2.9.9
+dj-database-url>=2.1.0
+
+# Static files for production
+whitenoise>=6.6.0

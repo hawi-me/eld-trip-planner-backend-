@@ -37,7 +37,11 @@ class TestApiRootEndpoint(TestCase):
         assert response.status_code == status.HTTP_200_OK
         assert 'endpoints' in response.data
         assert 'health' in response.data['endpoints']
-        assert 'plan_trip' in response.data['endpoints']
+        assert 'trips' in response.data['endpoints']
+        assert 'eld' in response.data['endpoints']
+        assert 'cycle' in response.data['endpoints']
+        assert 'config' in response.data['endpoints']
+        assert 'maps' in response.data['endpoints']
 
 
 class TestTripPlanEndpoint(TestCase):
