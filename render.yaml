@@ -9,7 +9,7 @@ services:
     name: eld-trip-planner-api
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    buildCommand: ./build.sh
     startCommand: gunicorn core.wsgi:application
     envVars:
       - key: DJANGO_SECRET_KEY
