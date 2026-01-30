@@ -23,6 +23,15 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+# Add Render.com hosts
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Always allow .onrender.com subdomains in production
+if not DEBUG:
+    ALLOWED_HOSTS.append('.onrender.com')
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
